@@ -104,51 +104,51 @@ export const PRODUCT_CATEGORIES: CategoryItemData[] = [
   {
     id: 'embutir',
     title: 'Cerraduras de embutir',
-    description: 'Para puertas de departamentos, oficinas y obras nuevas.',
-    image: 'https://images.unsplash.com/photo-1558036117-15d82a90b9b1?auto=format&fit=crop&w=800&q=80'
+    description: 'Para puertas de departamentos, oficinas y obras nuevas de alto tráfico.',
+    image: '/assets/hero/heavy_duty_lock_1789061384640.jpg'
   },
   {
     id: 'sobreponer',
     title: 'Cerraduras de sobreponer',
-    description: 'Seguridad adicional para puertas de casa y accesos de servicio.',
-    image: 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?auto=format&fit=crop&w=800&q=80'
+    description: 'Seguridad acorazada para portones, accesos perimetrales y rejas de servicio.',
+    image: 'https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&w=800&q=80'
   },
   {
     id: 'digitales',
     title: 'Cerraduras digitales',
-    description: 'Apertura con clave, tarjeta o app, sin copias de llave.',
-    image: 'https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&w=800&q=80'
+    description: 'Biometría 24/7, apertura con huella, tarjeta RFID, clave numérica o app móvil.',
+    image: '/assets/hero/smart_digital_lock_1789061354632.jpg'
   },
   {
     id: 'cilindros-maestras',
     title: 'Cilindros y llaves maestras',
-    description: 'Una llave para administrar y llaves individuales para cada unidad.',
-    image: 'https://images.unsplash.com/photo-1582139329536-e7284fece509?auto=format&fit=crop&w=800&q=80',
+    description: 'Sistemas de amaestramiento computarizado para condominios y plantas industriales.',
+    image: '/assets/hero/master_key_cylinder_1789061369777.jpg',
     featured: true
   },
   {
     id: 'candados',
-    title: 'Candados de seguridad',
-    description: 'Para bodegas, portones, rejas y faenas.',
-    image: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=800&q=80'
+    title: 'Candados de alta seguridad',
+    description: 'Acero cementado y aleaciones endurecidas para containers, faenas y bodegas.',
+    image: 'https://images.unsplash.com/photo-1582139329536-e7284fece509?auto=format&fit=crop&w=800&q=80'
   },
   {
     id: 'barras-antipanico',
     title: 'Barras antipánico',
-    description: 'Para salidas de emergencia en edificios y locales comerciales.',
+    description: 'Certificación de escape rápido para vías de evacuación en colegios y centros comerciales.',
     image: 'https://images.unsplash.com/photo-1517646287270-a5a9ca602e5c?auto=format&fit=crop&w=800&q=80'
   },
   {
     id: 'cierrapuertas',
     title: 'Cierrapuertas hidráulicos',
-    description: 'Cierre controlado para puertas de alto tráfico.',
-    image: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80'
+    description: 'Velocidad y golpe final regulables con resistencia a ráfagas de viento y alto tránsito.',
+    image: 'https://images.unsplash.com/photo-1534349762230-e0cadf78f5da?auto=format&fit=crop&w=800&q=80'
   },
   {
     id: 'manillas-herrajes',
     title: 'Manillas y herrajes',
-    description: 'Manillas, bisagras y topes en distintos acabados arquitectónicos.',
-    image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80'
+    description: 'Acero inoxidable 304, rosetas arquitectónicas y manillones para puertas de acceso.',
+    image: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=800&q=80'
   }
 ];
 

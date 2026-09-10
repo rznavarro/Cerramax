@@ -479,13 +479,8 @@ export const Hero: React.FC<HeroProps> = ({
             <span className="font-semibold text-[#FFC400]">Responde.</span>
           </h1>
 
-          {/* Subtítulo limpio y conciso */}
-          <p className="mt-3 sm:mt-4 w-full max-w-[40ch] text-xs sm:text-sm md:text-[1.1vw] leading-relaxed text-[#A0A6AF]">
-            Cerraduras de alta resistencia, sistemas de llave maestra y herrajes certificados en todo Chile.
-          </p>
-
           {/* CTAs Minimalistas */}
-          <div className="pointer-events-auto mt-5 sm:mt-6 flex items-center justify-center gap-3">
+          <div className="pointer-events-auto mt-6 sm:mt-8 flex items-center justify-center gap-3">
             <button
               type="button"
               onClick={onQuoteClick}

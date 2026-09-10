@@ -5,8 +5,6 @@ import { Profiles } from './components/Profiles';
 import { Catalog } from './components/Catalog';
 import { AboutUs } from './components/AboutUs';
 import { HowWeWork } from './components/HowWeWork';
-import { BrandStrip } from './components/BrandStrip';
-import { Testimonials } from './components/Testimonials';
 import { QuoteForm } from './components/QuoteForm';
 import { FAQ } from './components/FAQ';
 import { Footer } from './components/Footer';
@@ -80,12 +78,6 @@ export function App() {
 
         {/* S5. Cómo Trabajamos para Empresas y Obras */}
         <HowWeWork onQuoteClick={handleQuoteClick} />
-
-        {/* S6. Marcas que Distribuimos */}
-        <BrandStrip />
-
-        {/* S7. Testimonios Verificados */}
-        <Testimonials />
 
         {/* S8. Formulario de Cotización Dual-Panel */}
         <QuoteForm
