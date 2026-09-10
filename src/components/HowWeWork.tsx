@@ -17,9 +17,10 @@ export const HowWeWork: React.FC<HowWeWorkProps> = ({ onQuoteClick }) => {
       {/* Imagen de fondo oscurecida al 88% */}
       <div className="absolute inset-0 z-0 select-none pointer-events-none">
         <img
-          src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1920&q=80"
+          src="/assets/about/warehouse.jpg"
           alt=""
-          className="w-full h-full object-cover opacity-12"
+          className="w-full h-full object-cover opacity-15"
+          loading="lazy"
         />
         <div className="absolute inset-0 bg-[#1C1E22]/90 backdrop-blur-[1px]" />
       </div>

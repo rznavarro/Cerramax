@@ -27,27 +27,27 @@ const STREAM_IMAGES: StreamImage[] = [
     title: 'Cerraduras de Embutir',
   },
   {
-    src: 'https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&w=800&q=80',
+    src: '/assets/catalog/rim_lock.jpg',
     alt: 'Cerradura de sobreponer acorazada para portones y rejas',
     title: 'Cerraduras de Sobreponer',
   },
   {
-    src: 'https://images.unsplash.com/photo-1582139329536-e7284fece509?auto=format&fit=crop&w=800&q=80',
+    src: '/assets/catalog/armored_padlock.jpg',
     alt: 'Candados de máxima resistencia en acero cementado para faenas',
     title: 'Candados de Seguridad',
   },
   {
-    src: 'https://images.unsplash.com/photo-1517646287270-a5a9ca602e5c?auto=format&fit=crop&w=800&q=80',
+    src: '/assets/catalog/panic_exit_bar.jpg',
     alt: 'Barras antipánico certificadas para vías de evacuación',
     title: 'Barras Antipánico',
   },
   {
-    src: 'https://images.unsplash.com/photo-1534349762230-e0cadf78f5da?auto=format&fit=crop&w=800&q=80',
+    src: '/assets/catalog/door_closer.jpg',
     alt: 'Cierrapuertas hidráulicos regulables para alto tráfico peatonal',
     title: 'Cierrapuertas Hidráulicos',
   },
   {
-    src: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=800&q=80',
+    src: '/assets/catalog/door_handle.jpg',
     alt: 'Manillas arquitectónicas y herrajes en acero inoxidable',
     title: 'Manillas y Herrajes',
   },

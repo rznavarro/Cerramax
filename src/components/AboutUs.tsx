@@ -23,8 +23,8 @@ export const AboutUs: React.FC = () => {
             {/* Foto principal 4:5 */}
             <div className="relative z-10 aspect-[4/5] w-full rounded-[4px] overflow-hidden shadow-lg bg-[#26292E]">
               <img
-                src="https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80"
-                alt="Equipo técnico de Cerramax revisando cerraduras y especificaciones en bodega central"
+                src="/assets/about/warehouse.jpg"
+                alt="Bodega central de distribución y stock continuo de Cerramax"
                 className="w-full h-full object-cover"
                 loading="lazy"
               />
@@ -33,8 +33,8 @@ export const AboutUs: React.FC = () => {
             {/* Foto secundaria 1:1 superpuesta abajo a la derecha */}
             <div className="hidden sm:block absolute -bottom-6 -right-6 z-20 w-44 h-44 aspect-square rounded-[4px] overflow-hidden border-[6px] border-white shadow-xl bg-[#1C1E22]">
               <img
-                src="https://images.unsplash.com/photo-1582139329536-e7284fece509?auto=format&fit=crop&w=400&q=80"
-                alt="Detalle de cilindros y llaves maestras en mostrador técnico de Cerramax"
+                src="/assets/about/workbench.jpg"
+                alt="Mesa de armado de cilindros y sistemas de llave maestra en Cerramax"
                 className="w-full h-full object-cover"
                 loading="lazy"
               />

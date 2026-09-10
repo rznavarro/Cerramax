@@ -111,7 +111,7 @@ export const PRODUCT_CATEGORIES: CategoryItemData[] = [
     id: 'sobreponer',
     title: 'Cerraduras de sobreponer',
     description: 'Seguridad acorazada para portones, accesos perimetrales y rejas de servicio.',
-    image: 'https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&w=800&q=80'
+    image: '/assets/catalog/rim_lock.jpg'
   },
   {
     id: 'digitales',
@@ -130,25 +130,25 @@ export const PRODUCT_CATEGORIES: CategoryItemData[] = [
     id: 'candados',
     title: 'Candados de alta seguridad',
     description: 'Acero cementado y aleaciones endurecidas para containers, faenas y bodegas.',
-    image: 'https://images.unsplash.com/photo-1582139329536-e7284fece509?auto=format&fit=crop&w=800&q=80'
+    image: '/assets/catalog/armored_padlock.jpg'
   },
   {
     id: 'barras-antipanico',
     title: 'Barras antipánico',
     description: 'Certificación de escape rápido para vías de evacuación en colegios y centros comerciales.',
-    image: 'https://images.unsplash.com/photo-1517646287270-a5a9ca602e5c?auto=format&fit=crop&w=800&q=80'
+    image: '/assets/catalog/panic_exit_bar.jpg'
   },
   {
     id: 'cierrapuertas',
     title: 'Cierrapuertas hidráulicos',
     description: 'Velocidad y golpe final regulables con resistencia a ráfagas de viento y alto tránsito.',
-    image: 'https://images.unsplash.com/photo-1534349762230-e0cadf78f5da?auto=format&fit=crop&w=800&q=80'
+    image: '/assets/catalog/door_closer.jpg'
   },
   {
     id: 'manillas-herrajes',
     title: 'Manillas y herrajes',
     description: 'Acero inoxidable 304, rosetas arquitectónicas y manillones para puertas de acceso.',
-    image: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=800&q=80'
+    image: '/assets/catalog/door_handle.jpg'
   }
 ];
 

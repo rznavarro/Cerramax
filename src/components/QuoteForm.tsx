@@ -3,18 +3,15 @@ import {
   Phone,
   MessageSquare,
   Mail,
-  MapPin,
-  Clock,
   CheckCircle2,
   AlertCircle,
-  UploadCloud,
-  FileText,
+  Paperclip,
   X,
+  ArrowRight,
   Send
 } from 'lucide-react';
 import { CONTACT_INFO } from '../data/cerramaxData';
 import { ClientType, QuoteFormData, FormErrors } from '../types';
-import { Button } from './ui/Button';
 
 interface QuoteFormProps {
   selectedClientType: ClientType;
@@ -46,15 +43,11 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
   const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState<{ [key: string]: boolean }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [serverError, setServerError] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const successHeadingRef = useRef<HTMLHeadingElement>(null);
-  const errorSummaryRef = useRef<HTMLDivElement>(null);
 
-  // Sync props with state
   useEffect(() => {
     setFormData(prev => ({
       ...prev,
@@ -71,52 +64,49 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
     }
   }, [prefilledNeed]);
 
-  // Focus success heading on submit success
   useEffect(() => {
     if (isSuccess && successHeadingRef.current) {
       successHeadingRef.current.focus();
     }
   }, [isSuccess]);
 
-  // Validation function
   const validateField = (name: keyof QuoteFormData, value: any): string | null => {
     if (name === 'nombre') {
       if (!value || value.trim().length < 2) {
-        return 'Escribe tu nombre para saber con quién hablamos.';
+        return 'Indica tu nombre y apellido.';
       }
     }
     if (name === 'empresa' && formData.tipo !== 'hogar') {
       if (!value || value.trim().length < 2) {
-        return 'Escribe el nombre de tu empresa o constructora.';
+        return 'Indica tu empresa o constructora.';
       }
     }
     if (name === 'correo') {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!value || !emailRegex.test(value)) {
-        return 'Revisa el correo: falta el @ o el dominio (ej: nombre@empresa.cl).';
+        return 'Ingresa un correo electrónico válido.';
       }
     }
     if (name === 'telefono') {
-      // Chilean phone validation: 9 digits, accepts spaces, +56
       const clean = value.replace(/[\s+-]/g, '');
       const isChilean = /^(\+?56)?9\d{8}$/.test(clean) || /^9\d{8}$/.test(clean);
       if (!value || !isChilean) {
-        return 'Escribe un número chileno de 9 dígitos, por ejemplo 9 1234 5678.';
+        return 'Ingresa un teléfono chileno válido (ej: 9 1234 5678).';
       }
     }
     if (name === 'comuna') {
       if (!value || value.trim().length < 2) {
-        return 'Escribe tu comuna para calcular el despacho.';
+        return 'Indica la comuna o ciudad de entrega.';
       }
     }
     if (name === 'necesidad') {
-      if (!value || value.trim().length < 10) {
-        return 'Cuéntanos qué productos o cantidades necesitas (mínimo 10 caracteres).';
+      if (!value || value.trim().length < 5) {
+        return 'Describe brevemente qué productos o cubicación necesitas.';
       }
     }
     if (name === 'consentimiento') {
       if (!value) {
-        return 'Marca la casilla para poder enviarte la cotización.';
+        return 'Debes aceptar el tratamiento para emitir la cotización.';
       }
     }
     return null;
@@ -154,48 +144,40 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
 
   const handleClientTypeSelect = (tipo: ClientType) => {
     onClientTypeChange(tipo);
-    handleChange('tipo', tipo);
+    setFormData(prev => ({ ...prev, tipo }));
+    if (tipo === 'hogar' && errors.empresa) {
+      setErrors(prev => {
+        const updated = { ...prev };
+        delete updated.empresa;
+        return updated;
+      });
+    }
   };
 
-  // File handling
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Check extension
-    const allowedExtensions = ['pdf', 'xls', 'xlsx', 'csv', 'jpg', 'jpeg', 'png'];
-    const ext = file.name.split('.').pop()?.toLowerCase();
-    if (!ext || !allowedExtensions.includes(ext)) {
+    if (file.size > 10 * 1024 * 1024) {
       setErrors(prev => ({
         ...prev,
-        archivo: 'Este formato no se puede adjuntar. Usa PDF, Excel, JPG o PNG.'
+        archivo: 'El archivo excede el límite máximo de 10 MB.'
       }));
       return;
     }
 
-    // Check size <= 10MB
-    const maxSize = 10 * 1024 * 1024;
-    if (file.size > maxSize) {
-      setErrors(prev => ({
-        ...prev,
-        archivo: 'El archivo pesa más de 10 MB. Adjunta uno más liviano o envíalo por WhatsApp.'
-      }));
-      return;
-    }
+    const sizeInMB = (file.size / (1024 * 1024)).toFixed(1);
+    setFormData(prev => ({
+      ...prev,
+      fileName: file.name,
+      fileSize: `${sizeInMB} MB`
+    }));
 
-    // Clear error and set metadata
     setErrors(prev => {
       const updated = { ...prev };
       delete updated.archivo;
       return updated;
     });
-
-    const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
-    setFormData(prev => ({
-      ...prev,
-      fileName: file.name,
-      fileSize: `${sizeMb} MB`
-    }));
   };
 
   const removeFile = () => {
@@ -211,16 +193,12 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setServerError(null);
 
-    // Check honeypot spam bot
     if (formData.honeypot) {
-      console.warn('Bot submission blocked');
+      setIsSuccess(true);
       return;
     }
 
-    // Validate all fields
-    const newErrors: FormErrors = {};
     const fieldsToValidate: (keyof QuoteFormData)[] = [
       'nombre',
       'correo',
@@ -234,6 +212,7 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
       fieldsToValidate.push('empresa');
     }
 
+    const newErrors: FormErrors = {};
     fieldsToValidate.forEach(field => {
       const err = validateField(field, formData[field]);
       if (err) {
@@ -253,28 +232,14 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
     });
 
     if (Object.keys(newErrors).length > 0) {
-      // Focus error summary
-      setTimeout(() => {
-        errorSummaryRef.current?.focus();
-      }, 50);
       return;
     }
 
-    // Simulate submission with upload progress
     setIsSubmitting(true);
-    setUploadProgress(0);
-
-    const interval = setInterval(() => {
-      setUploadProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setIsSubmitting(false);
-          setIsSuccess(true);
-          return 100;
-        }
-        return prev + 25;
-      });
-    }, 200);
+    setTimeout(() => {
+      setIsSubmitting(false);
+      setIsSuccess(true);
+    }, 600);
   };
 
   const handleResetForm = () => {
@@ -297,610 +262,407 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
     onClearPrefilledNeed();
   };
 
-  const truncateMiddle = (text: string, maxLength: number = 24) => {
-    if (text.length <= maxLength) return text;
-    const start = text.slice(0, 12);
-    const end = text.slice(-8);
-    return `${start}…${end}`;
-  };
-
   return (
     <section
       id="cotizar"
       aria-labelledby="cotizar-heading"
-      className="bg-white py-16 lg:py-24 border-b border-[#DDE0E4]"
+      className="bg-[#FAFAFA] py-16 sm:py-24 border-t border-b border-[#ECEEF0]"
     >
-      <div className="max-w-[1240px] mx-auto px-5 md:px-10 lg:px-16">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6">
         
-        {/* Contenedor Dual-Panel (12 columnas) */}
-        <div className="rounded-[4px] border border-[#DDE0E4] shadow-sm overflow-hidden grid grid-cols-1 lg:grid-cols-12">
+        {/* Tarjeta Principal Minimalista */}
+        <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0_4px_24px_rgba(0,0,0,0.03)] p-6 sm:p-10 md:p-12">
           
-          {/* Panel Izquierdo Oscuro (4 columnas en desktop) */}
-          <div className="lg:col-span-4 bg-[#1C1E22] text-white p-6 sm:p-8 lg:p-10 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-[#26292E]">
-            <div>
-              {/* Título y tiempo de compromiso */}
-              <h2
-                id="cotizar-heading"
-                tabIndex={-1}
-                className="text-white font-bold text-2xl sm:text-3xl leading-[1.15] tracking-tight focus:outline-hidden"
-                style={{
-                  fontFamily: 'var(--font-family)',
-                  fontStretch: '110%'
-                }}
+          {/* Cabecera limpia y centrada */}
+          <div className="text-center max-w-xl mx-auto mb-8 sm:mb-10">
+            <h2
+              id="cotizar-heading"
+              className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-[#15171A]"
+              style={{ fontFamily: 'var(--font-family)' }}
+            >
+              Solicita tu cotización
+            </h2>
+            <p className="mt-2 text-sm sm:text-base text-[#5E656E]">
+              Respondemos en menos de 24 horas hábiles con cubicación técnica y precios por volumen.
+            </p>
+
+            {/* Accesos rápidos de contacto minimalistas */}
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-xs text-[#5E656E]">
+              <a
+                href={CONTACT_INFO.whatsappHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F3F4F6] text-[#15171A] hover:bg-[#E5E7EB] transition-colors font-medium"
               >
-                Solicita tu cotización
-              </h2>
-              
-              <p className="mt-3 text-[#B4BAC2] text-sm sm:text-base leading-relaxed">
-                Respondemos en menos de 24 horas hábiles con cubicación técnica y precios por volumen.
+                <MessageSquare className="w-3.5 h-3.5 text-[#16A34A]" />
+                <span>WhatsApp directo</span>
+              </a>
+              <a
+                href={CONTACT_INFO.phoneHref}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F3F4F6] text-[#15171A] hover:bg-[#E5E7EB] transition-colors font-medium"
+              >
+                <Phone className="w-3.5 h-3.5 text-[#2563EB]" />
+                <span>{CONTACT_INFO.phoneDisplay}</span>
+              </a>
+              <a
+                href={CONTACT_INFO.emailHref}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F3F4F6] text-[#15171A] hover:bg-[#E5E7EB] transition-colors font-medium"
+              >
+                <Mail className="w-3.5 h-3.5 text-[#4B5563]" />
+                <span>{CONTACT_INFO.email}</span>
+              </a>
+            </div>
+          </div>
+
+          {isSuccess ? (
+            /* Estado de Éxito Minimalista */
+            <div
+              className="py-8 px-4 flex flex-col items-center text-center animate-in fade-in duration-200"
+              aria-live="polite"
+            >
+              <div className="w-14 h-14 rounded-full bg-[#ECFDF5] text-[#16A34A] flex items-center justify-center mb-4 border border-[#A7F3D0]">
+                <CheckCircle2 className="w-7 h-7" />
+              </div>
+
+              <h3
+                ref={successHeadingRef}
+                tabIndex={-1}
+                className="text-xl sm:text-2xl font-bold text-[#15171A] tracking-tight focus:outline-hidden"
+              >
+                Solicitud enviada con éxito
+              </h3>
+
+              <p className="mt-2 text-sm text-[#5E656E] max-w-md">
+                Hemos recibido tu requerimiento. Enviaremos la propuesta técnica y comercial a <strong className="text-[#15171A]">{formData.correo}</strong> en menos de 24 horas hábiles.
               </p>
 
-              {/* Lista de contacto con insignias */}
-              <div className="mt-8 space-y-5">
-                {/* Teléfono */}
-                <a
-                  href={CONTACT_INFO.phoneHref}
-                  className="flex items-start gap-3.5 group"
-                >
-                  <div className="w-10 h-10 rounded-full bg-[#26292E] text-[#FFC400] flex items-center justify-center shrink-0 group-hover:bg-[#FFC400] group-hover:text-[#1C1E22] transition-colors">
-                    <Phone className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="text-xs text-[#B4BAC2] font-medium">Llámanos directo</div>
-                    <div className="text-sm font-bold text-white group-hover:text-[#FFC400] transition-colors font-tabular">
-                      {CONTACT_INFO.phoneDisplay}
-                    </div>
-                  </div>
-                </a>
+              {formData.fileName && (
+                <div className="mt-3 text-xs text-[#5E656E] bg-[#F9FAFB] border border-[#E5E7EB] px-3 py-1 rounded-md">
+                  Archivo adjunto: <span className="font-medium text-[#15171A]">{formData.fileName}</span>
+                </div>
+              )}
 
-                {/* WhatsApp */}
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleResetForm}
+                  className="px-4 py-2 text-xs font-medium text-[#4B5563] bg-[#F3F4F6] hover:bg-[#E5E7EB] rounded-lg transition-colors cursor-pointer"
+                >
+                  Enviar otra cotización
+                </button>
                 <a
                   href={CONTACT_INFO.whatsappHref}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-start gap-3.5 group"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-white bg-[#15171A] hover:bg-black rounded-lg transition-colors cursor-pointer"
                 >
-                  <div className="w-10 h-10 rounded-full bg-[#26292E] text-[#FFC400] flex items-center justify-center shrink-0 group-hover:bg-[#FFC400] group-hover:text-[#1C1E22] transition-colors">
-                    <MessageSquare className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="text-xs text-[#B4BAC2] font-medium">WhatsApp de ventas</div>
-                    <div className="text-sm font-bold text-white group-hover:text-[#FFC400] transition-colors font-tabular">
-                      {CONTACT_INFO.phoneDisplay}
-                    </div>
-                  </div>
+                  <span>Continuar por WhatsApp</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
                 </a>
-
-                {/* Correo */}
-                <a
-                  href={CONTACT_INFO.emailHref}
-                  className="flex items-start gap-3.5 group"
-                >
-                  <div className="w-10 h-10 rounded-full bg-[#26292E] text-[#FFC400] flex items-center justify-center shrink-0 group-hover:bg-[#FFC400] group-hover:text-[#1C1E22] transition-colors">
-                    <Mail className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="text-xs text-[#B4BAC2] font-medium">Correo electrónico</div>
-                    <div className="text-sm font-bold text-white group-hover:text-[#FFC400] transition-colors">
-                      {CONTACT_INFO.email}
-                    </div>
-                  </div>
-                </a>
-
-                {/* Dirección y Horario */}
-                <div className="flex items-start gap-3.5 pt-2">
-                  <div className="w-10 h-10 rounded-full bg-[#26292E] text-[#FFC400] flex items-center justify-center shrink-0">
-                    <MapPin className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="text-xs text-[#B4BAC2] font-medium">Bodega y showroom</div>
-                    <div className="text-sm font-bold text-white">
-                      {CONTACT_INFO.address}
-                    </div>
-                    <div className="text-xs text-[#B4BAC2] mt-0.5">
-                      {CONTACT_INFO.schedule}
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
+          ) : (
+            /* Formulario Minimalista */
+            <form onSubmit={handleSubmit} noValidate className="space-y-5">
+              
+              {/* Selector de Tipo de Cliente tipo Segmented Pills */}
+              <div>
+                <label className="block text-xs font-medium text-[#5E656E] mb-1.5">
+                  ¿Para quién es esta cotización?
+                </label>
+                <div className="grid grid-cols-3 gap-1.5 p-1 bg-[#F3F4F6] rounded-xl">
+                  {[
+                    { id: 'constructora', label: 'Constructora / Obra' },
+                    { id: 'administracion', label: 'Edificio / Condominio' },
+                    { id: 'hogar', label: 'Hogar / Pyme' }
+                  ].map((opt) => {
+                    const isSelected = formData.tipo === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => handleClientTypeSelect(opt.id as ClientType)}
+                        className={`py-2 px-2 text-xs font-medium rounded-lg transition-all text-center truncate cursor-pointer ${
+                          isSelected
+                            ? 'bg-white text-[#15171A] shadow-xs font-semibold'
+                            : 'text-[#5E656E] hover:text-[#15171A]'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
-            {/* Microconfianza legal al fondo del panel oscuro */}
-            <div className="mt-8 pt-6 border-t border-[#26292E] text-xs text-[#B4BAC2]">
-              <p>
-                Razón Social: <span className="text-white font-medium">{CONTACT_INFO.legalName}</span>. Facturación inmediata para faenas y proyectos.
-              </p>
-            </div>
-          </div>
-
-          {/* Panel Derecho: Formulario / Mensaje de Éxito (8 columnas en desktop) */}
-          <div className="lg:col-span-8 bg-white p-6 sm:p-8 lg:p-10">
-            
-            {isSuccess ? (
-              /* Estado de Éxito */
-              <div
-                className="py-12 px-4 flex flex-col items-center text-center max-w-lg mx-auto animate-in fade-in duration-200"
-                aria-live="polite"
-              >
-                <div className="w-16 h-16 rounded-full bg-[#1E7F3C]/10 text-[#1E7F3C] flex items-center justify-center mb-6">
-                  <CheckCircle2 className="w-10 h-10 stroke-[2]" />
+              {/* Fila 1: Nombre y Empresa */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="form-nombre" className="block text-xs font-medium text-[#15171A] mb-1">
+                    Nombre completo
+                  </label>
+                  <input
+                    id="form-nombre"
+                    name="nombre"
+                    type="text"
+                    required
+                    placeholder="Ej: Juan Pérez"
+                    value={formData.nombre}
+                    disabled={isSubmitting}
+                    onChange={(e) => handleChange('nombre', e.target.value)}
+                    onBlur={() => handleBlur('nombre')}
+                    className={`w-full h-11 px-3 text-sm bg-white border rounded-lg transition-colors focus:outline-hidden ${
+                      errors.nombre
+                        ? 'border-[#DC2626] focus:border-[#DC2626]'
+                        : 'border-[#D1D5DB] focus:border-[#15171A]'
+                    }`}
+                  />
+                  {errors.nombre && (
+                    <p className="mt-1 text-[11px] text-[#DC2626] flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3 shrink-0" />
+                      <span>{errors.nombre}</span>
+                    </p>
+                  )}
                 </div>
 
-                <h3
-                  ref={successHeadingRef}
-                  tabIndex={-1}
-                  className="text-2xl sm:text-3xl font-bold text-[#1C1E22] tracking-tight focus:outline-hidden"
-                  style={{ fontStretch: '105%' }}
-                >
-                  Recibimos tu solicitud
-                </h3>
+                <div>
+                  <label htmlFor="form-empresa" className="block text-xs font-medium text-[#15171A] mb-1">
+                    {formData.tipo === 'hogar' ? 'Empresa o negocio (opcional)' : 'Empresa o constructora'}
+                  </label>
+                  <input
+                    id="form-empresa"
+                    name="empresa"
+                    type="text"
+                    placeholder={formData.tipo === 'hogar' ? 'Particular o razón social' : 'Ej: Constructora Alerce SpA'}
+                    value={formData.empresa}
+                    disabled={isSubmitting}
+                    onChange={(e) => handleChange('empresa', e.target.value)}
+                    onBlur={() => handleBlur('empresa')}
+                    className={`w-full h-11 px-3 text-sm bg-white border rounded-lg transition-colors focus:outline-hidden ${
+                      errors.empresa
+                        ? 'border-[#DC2626] focus:border-[#DC2626]'
+                        : 'border-[#D1D5DB] focus:border-[#15171A]'
+                    }`}
+                  />
+                  {errors.empresa && (
+                    <p className="mt-1 text-[11px] text-[#DC2626] flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3 shrink-0" />
+                      <span>{errors.empresa}</span>
+                    </p>
+                  )}
+                </div>
+              </div>
 
-                <p className="mt-3 text-[#5E656E] text-base leading-relaxed">
-                  Te enviaremos la cotización detallada a <strong className="text-[#1C1E22]">{formData.correo}</strong> en menos de 24 horas hábiles.
-                </p>
+              {/* Fila 2: Correo y Teléfono */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="form-correo" className="block text-xs font-medium text-[#15171A] mb-1">
+                    Correo electrónico
+                  </label>
+                  <input
+                    id="form-correo"
+                    name="correo"
+                    type="email"
+                    required
+                    placeholder="contacto@empresa.cl"
+                    value={formData.correo}
+                    disabled={isSubmitting}
+                    onChange={(e) => handleChange('correo', e.target.value)}
+                    onBlur={() => handleBlur('correo')}
+                    className={`w-full h-11 px-3 text-sm bg-white border rounded-lg transition-colors focus:outline-hidden ${
+                      errors.correo
+                        ? 'border-[#DC2626] focus:border-[#DC2626]'
+                        : 'border-[#D1D5DB] focus:border-[#15171A]'
+                    }`}
+                  />
+                  {errors.correo && (
+                    <p className="mt-1 text-[11px] text-[#DC2626] flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3 shrink-0" />
+                      <span>{errors.correo}</span>
+                    </p>
+                  )}
+                </div>
 
-                {formData.fileName && (
-                  <p className="mt-2 text-xs text-[#5E656E] bg-[#F2F3F5] px-3 py-1.5 rounded-[2px]">
-                    Archivo adjuntado correctamente: {formData.fileName}
+                <div>
+                  <label htmlFor="form-telefono" className="block text-xs font-medium text-[#15171A] mb-1">
+                    Teléfono o WhatsApp
+                  </label>
+                  <input
+                    id="form-telefono"
+                    name="telefono"
+                    type="tel"
+                    required
+                    placeholder="9 1234 5678"
+                    value={formData.telefono}
+                    disabled={isSubmitting}
+                    onChange={(e) => handleChange('telefono', e.target.value)}
+                    onBlur={() => handleBlur('telefono')}
+                    className={`w-full h-11 px-3 text-sm bg-white border rounded-lg transition-colors focus:outline-hidden ${
+                      errors.telefono
+                        ? 'border-[#DC2626] focus:border-[#DC2626]'
+                        : 'border-[#D1D5DB] focus:border-[#15171A]'
+                    }`}
+                  />
+                  {errors.telefono && (
+                    <p className="mt-1 text-[11px] text-[#DC2626] flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3 shrink-0" />
+                      <span>{errors.telefono}</span>
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Fila 3: Comuna */}
+              <div>
+                <label htmlFor="form-comuna" className="block text-xs font-medium text-[#15171A] mb-1">
+                  Comuna o ciudad de entrega
+                </label>
+                <input
+                  id="form-comuna"
+                  name="comuna"
+                  type="text"
+                  required
+                  placeholder="Ej: Las Condes, Santiago Centro, Antofagasta..."
+                  value={formData.comuna}
+                  disabled={isSubmitting}
+                  onChange={(e) => handleChange('comuna', e.target.value)}
+                  onBlur={() => handleBlur('comuna')}
+                  className={`w-full h-11 px-3 text-sm bg-white border rounded-lg transition-colors focus:outline-hidden ${
+                    errors.comuna
+                      ? 'border-[#DC2626] focus:border-[#DC2626]'
+                      : 'border-[#D1D5DB] focus:border-[#15171A]'
+                  }`}
+                />
+                {errors.comuna && (
+                  <p className="mt-1 text-[11px] text-[#DC2626] flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3 shrink-0" />
+                    <span>{errors.comuna}</span>
                   </p>
                 )}
-
-                <div className="mt-8 flex flex-col sm:flex-row items-center gap-4 w-full justify-center">
-                  <Button
-                    label="Enviar otra solicitud"
-                    onClick={handleResetForm}
-                    variant="secondary-light"
-                    size="md"
-                  />
-                  <Button
-                    label="Escribir por WhatsApp"
-                    href={CONTACT_INFO.whatsappHref}
-                    variant="primary"
-                    size="md"
-                    icon={<MessageSquare className="w-4 h-4" />}
-                  />
-                </div>
               </div>
-            ) : (
-              /* Formulario Activo */
-              <form onSubmit={handleSubmit} noValidate className="space-y-6">
-                
-                {/* Resumen de errores superior si se intentó enviar inválido */}
-                {Object.keys(errors).length > 0 && (
-                  <div
-                    ref={errorSummaryRef}
-                    tabIndex={-1}
-                    role="alert"
-                    className="p-4 rounded-[2px] bg-[#C5221F]/10 border-l-4 border-[#C5221F] text-[#C5221F] text-sm focus:outline-hidden"
-                  >
-                    <div className="font-bold flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4" />
-                      <span>Revisa {Object.keys(errors).length} campos para enviar tu solicitud:</span>
-                    </div>
-                    <ul className="mt-2 list-disc list-inside text-xs space-y-1 text-[#1C1E22]">
-                      {Object.entries(errors).map(([key, msg]) => (
-                        <li key={key}>{msg}</li>
-                      ))}
-                    </ul>
-                  </div>
+
+              {/* Fila 4: ¿Qué necesitas cotizar? */}
+              <div>
+                <label htmlFor="form-necesidad" className="block text-xs font-medium text-[#15171A] mb-1">
+                  ¿Qué necesitas cotizar?
+                </label>
+                <textarea
+                  id="form-necesidad"
+                  name="necesidad"
+                  rows={3}
+                  required
+                  placeholder="Describe modelos, cantidades aproximadas o requerimientos de seguridad..."
+                  value={formData.necesidad}
+                  disabled={isSubmitting}
+                  onChange={(e) => handleChange('necesidad', e.target.value)}
+                  onBlur={() => handleBlur('necesidad')}
+                  className={`w-full p-3 text-sm bg-white border rounded-lg transition-colors focus:outline-hidden resize-y ${
+                    errors.necesidad
+                      ? 'border-[#DC2626] focus:border-[#DC2626]'
+                      : 'border-[#D1D5DB] focus:border-[#15171A]'
+                  }`}
+                />
+                {errors.necesidad && (
+                  <p className="mt-1 text-[11px] text-[#DC2626] flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3 shrink-0" />
+                    <span>{errors.necesidad}</span>
+                  </p>
                 )}
+              </div>
 
-                {/* Mensaje de error de servidor si existiera */}
-                {serverError && (
-                  <div className="p-4 rounded-[2px] bg-[#C5221F]/10 border-l-4 border-[#C5221F] text-[#C5221F] text-sm">
-                    {serverError}
-                  </div>
-                )}
-
-                {/* 1. Tipo de Cliente (Segmented Radio Group, ancho completo) */}
-                <fieldset className="border-0 p-0 m-0">
-                  <legend className="text-sm font-semibold text-[#1C1E22] mb-2 flex items-center justify-between">
-                    <span>Tipo de cliente <span className="text-xs font-normal text-[#5E656E]">(obligatorio)</span></span>
-                  </legend>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    {[
-                      { id: 'constructora', label: 'Constructora o contratista' },
-                      { id: 'administracion', label: 'Administración de edificios' },
-                      { id: 'hogar', label: 'Hogar o pyme' }
-                    ].map((opt) => {
-                      const isSelected = formData.tipo === opt.id;
-                      return (
-                        <button
-                          key={opt.id}
-                          type="button"
-                          onClick={() => handleClientTypeSelect(opt.id as ClientType)}
-                          className={`h-12 px-3 text-xs sm:text-[0.8125rem] font-bold rounded-[2px] border transition-all text-center flex items-center justify-center leading-snug cursor-pointer ${
-                            isSelected
-                              ? 'bg-[#1C1E22] text-white border-[#1C1E22] shadow-2xs'
-                              : 'bg-white text-[#5E656E] border-[#DDE0E4] hover:border-[#1C1E22] hover:text-[#1C1E22]'
-                          }`}
-                        >
-                          {opt.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </fieldset>
-
-                {/* Grilla de 2 columnas para campos personales */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  
-                  {/* Nombre y apellido */}
-                  <div>
-                    <label
-                      htmlFor="form-nombre"
-                      className="block text-sm font-semibold text-[#1C1E22] mb-1.5"
-                    >
-                      Nombre y apellido <span className="text-xs font-normal text-[#5E656E]">(obligatorio)</span>
-                    </label>
-                    <input
-                      id="form-nombre"
-                      name="nombre"
-                      type="text"
-                      autoComplete="name"
-                      required
-                      value={formData.nombre}
-                      disabled={isSubmitting}
-                      onChange={(e) => handleChange('nombre', e.target.value)}
-                      onBlur={() => handleBlur('nombre')}
-                      aria-invalid={!!errors.nombre}
-                      aria-describedby={errors.nombre ? 'error-nombre' : undefined}
-                      className={`w-full h-12 px-3.5 text-sm bg-white border rounded-[2px] transition-colors focus:ring-0 focus:outline-hidden ${
-                        errors.nombre
-                          ? 'border-[#C5221F] focus:border-[#C5221F] shadow-[inset_0_0_0_1px_#C5221F]'
-                          : 'border-[#DDE0E4] focus:border-[#1C1E22] focus:shadow-[inset_0_0_0_1px_#1C1E22]'
-                      } ${isSubmitting ? 'bg-[#F2F3F5] text-[#5E656E]' : 'text-[#1C1E22]'}`}
-                    />
-                    {errors.nombre && (
-                      <p id="error-nombre" className="mt-1 text-xs text-[#C5221F] flex items-center gap-1">
-                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                        <span>{errors.nombre}</span>
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Empresa (Oculto dinámicamente si es hogar) */}
-                  {formData.tipo !== 'hogar' ? (
-                    <div className="animate-in fade-in duration-200">
-                      <label
-                        htmlFor="form-empresa"
-                        className="block text-sm font-semibold text-[#1C1E22] mb-1.5"
-                      >
-                        Empresa o constructora <span className="text-xs font-normal text-[#5E656E]">(obligatorio)</span>
-                      </label>
-                      <input
-                        id="form-empresa"
-                        name="empresa"
-                        type="text"
-                        autoComplete="organization"
-                        required
-                        value={formData.empresa}
-                        disabled={isSubmitting}
-                        onChange={(e) => handleChange('empresa', e.target.value)}
-                        onBlur={() => handleBlur('empresa')}
-                        aria-invalid={!!errors.empresa}
-                        aria-describedby={errors.empresa ? 'error-empresa' : undefined}
-                        className={`w-full h-12 px-3.5 text-sm bg-white border rounded-[2px] transition-colors focus:ring-0 focus:outline-hidden ${
-                          errors.empresa
-                            ? 'border-[#C5221F] focus:border-[#C5221F] shadow-[inset_0_0_0_1px_#C5221F]'
-                            : 'border-[#DDE0E4] focus:border-[#1C1E22] focus:shadow-[inset_0_0_0_1px_#1C1E22]'
-                        } ${isSubmitting ? 'bg-[#F2F3F5] text-[#5E656E]' : 'text-[#1C1E22]'}`}
-                      />
-                      {errors.empresa && (
-                        <p id="error-empresa" className="mt-1 text-xs text-[#C5221F] flex items-center gap-1">
-                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                          <span>{errors.empresa}</span>
-                        </p>
-                      )}
-                    </div>
-                  ) : (
-                    <div>
-                      <label
-                        htmlFor="form-empresa-opc"
-                        className="block text-sm font-semibold text-[#1C1E22] mb-1.5"
-                      >
-                        Negocio o profesión <span className="text-xs font-normal text-[#5E656E]">(opcional)</span>
-                      </label>
-                      <input
-                        id="form-empresa-opc"
-                        name="empresa"
-                        type="text"
-                        placeholder="Ej: Taller, oficina o particular"
-                        value={formData.empresa}
-                        disabled={isSubmitting}
-                        onChange={(e) => handleChange('empresa', e.target.value)}
-                        className="w-full h-12 px-3.5 text-sm bg-white border border-[#DDE0E4] focus:border-[#1C1E22] rounded-[2px] text-[#1C1E22]"
-                      />
-                    </div>
-                  )}
-
-                  {/* Correo electrónico */}
-                  <div>
-                    <label
-                      htmlFor="form-correo"
-                      className="block text-sm font-semibold text-[#1C1E22] mb-1.5"
-                    >
-                      Correo electrónico <span className="text-xs font-normal text-[#5E656E]">(obligatorio)</span>
-                    </label>
-                    <input
-                      id="form-correo"
-                      name="correo"
-                      type="email"
-                      autoComplete="email"
-                      required
-                      placeholder="nombre@empresa.cl"
-                      value={formData.correo}
-                      disabled={isSubmitting}
-                      onChange={(e) => handleChange('correo', e.target.value)}
-                      onBlur={() => handleBlur('correo')}
-                      aria-invalid={!!errors.correo}
-                      aria-describedby={errors.correo ? 'error-correo' : undefined}
-                      className={`w-full h-12 px-3.5 text-sm bg-white border rounded-[2px] transition-colors focus:ring-0 focus:outline-hidden ${
-                        errors.correo
-                          ? 'border-[#C5221F] focus:border-[#C5221F] shadow-[inset_0_0_0_1px_#C5221F]'
-                          : 'border-[#DDE0E4] focus:border-[#1C1E22] focus:shadow-[inset_0_0_0_1px_#1C1E22]'
-                      } ${isSubmitting ? 'bg-[#F2F3F5] text-[#5E656E]' : 'text-[#1C1E22]'}`}
-                    />
-                    {errors.correo && (
-                      <p id="error-correo" className="mt-1 text-xs text-[#C5221F] flex items-center gap-1">
-                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                        <span>{errors.correo}</span>
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Teléfono o WhatsApp */}
-                  <div>
-                    <label
-                      htmlFor="form-telefono"
-                      className="block text-sm font-semibold text-[#1C1E22] mb-1.5"
-                    >
-                      Teléfono o WhatsApp <span className="text-xs font-normal text-[#5E656E]">(obligatorio)</span>
-                    </label>
-                    <input
-                      id="form-telefono"
-                      name="telefono"
-                      type="tel"
-                      inputMode="tel"
-                      autoComplete="tel"
-                      required
-                      placeholder="9 1234 5678"
-                      value={formData.telefono}
-                      disabled={isSubmitting}
-                      onChange={(e) => handleChange('telefono', e.target.value)}
-                      onBlur={() => handleBlur('telefono')}
-                      aria-invalid={!!errors.telefono}
-                      aria-describedby={errors.telefono ? 'error-telefono' : 'ayuda-telefono'}
-                      className={`w-full h-12 px-3.5 text-sm bg-white border rounded-[2px] transition-colors focus:ring-0 focus:outline-hidden ${
-                        errors.telefono
-                          ? 'border-[#C5221F] focus:border-[#C5221F] shadow-[inset_0_0_0_1px_#C5221F]'
-                          : 'border-[#DDE0E4] focus:border-[#1C1E22] focus:shadow-[inset_0_0_0_1px_#1C1E22]'
-                      } ${isSubmitting ? 'bg-[#F2F3F5] text-[#5E656E]' : 'text-[#1C1E22]'}`}
-                    />
-                    {errors.telefono ? (
-                      <p id="error-telefono" className="mt-1 text-xs text-[#C5221F] flex items-center gap-1">
-                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                        <span>{errors.telefono}</span>
-                      </p>
-                    ) : (
-                      <p id="ayuda-telefono" className="mt-1 text-xs text-[#5E656E]">
-                        Te podemos contactar por WhatsApp.
-                      </p>
-                    )}
-                  </div>
-
-                </div>
-
-                {/* Comuna (ancho completo) */}
-                <div>
-                  <label
-                    htmlFor="form-comuna"
-                    className="block text-sm font-semibold text-[#1C1E22] mb-1.5"
-                  >
-                    Comuna de entrega o instalación <span className="text-xs font-normal text-[#5E656E]">(obligatorio)</span>
-                  </label>
-                  <input
-                    id="form-comuna"
-                    name="comuna"
-                    type="text"
-                    autoComplete="address-level2"
-                    required
-                    placeholder="Ej: Santiago, Las Condes, Concepción, Antofagasta"
-                    value={formData.comuna}
-                    disabled={isSubmitting}
-                    onChange={(e) => handleChange('comuna', e.target.value)}
-                    onBlur={() => handleBlur('comuna')}
-                    aria-invalid={!!errors.comuna}
-                    aria-describedby={errors.comuna ? 'error-comuna' : undefined}
-                    className={`w-full h-12 px-3.5 text-sm bg-white border rounded-[2px] transition-colors focus:ring-0 focus:outline-hidden ${
-                      errors.comuna
-                        ? 'border-[#C5221F] focus:border-[#C5221F] shadow-[inset_0_0_0_1px_#C5221F]'
-                        : 'border-[#DDE0E4] focus:border-[#1C1E22] focus:shadow-[inset_0_0_0_1px_#1C1E22]'
-                    } ${isSubmitting ? 'bg-[#F2F3F5] text-[#5E656E]' : 'text-[#1C1E22]'}`}
-                  />
-                  {errors.comuna && (
-                    <p id="error-comuna" className="mt-1 text-xs text-[#C5221F] flex items-center gap-1">
-                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                      <span>{errors.comuna}</span>
-                    </p>
-                  )}
-                </div>
-
-                {/* ¿Qué necesitas? (Textarea con contador a partir de 800 caracteres) */}
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label
-                      htmlFor="form-necesidad"
-                      className="block text-sm font-semibold text-[#1C1E22]"
-                    >
-                      ¿Qué necesitas cotizar? <span className="text-xs font-normal text-[#5E656E]">(obligatorio)</span>
-                    </label>
-                    {formData.necesidad.length >= 800 && (
-                      <span className="text-xs text-[#5E656E] font-tabular">
-                        {formData.necesidad.length} / 1000
-                      </span>
-                    )}
-                  </div>
-                  <textarea
-                    id="form-necesidad"
-                    name="necesidad"
-                    rows={4}
-                    required
-                    maxLength={1000}
-                    placeholder="Ej: 40 cerraduras de embutir para departamentos, cilindros con llave maestra y 4 barras antipánico para salidas de emergencia."
-                    value={formData.necesidad}
-                    disabled={isSubmitting}
-                    onChange={(e) => handleChange('necesidad', e.target.value)}
-                    onBlur={() => handleBlur('necesidad')}
-                    aria-invalid={!!errors.necesidad}
-                    aria-describedby={errors.necesidad ? 'error-necesidad' : undefined}
-                    className={`w-full p-3.5 text-sm bg-white border rounded-[2px] transition-colors focus:ring-0 focus:outline-hidden ${
-                      errors.necesidad
-                        ? 'border-[#C5221F] focus:border-[#C5221F] shadow-[inset_0_0_0_1px_#C5221F]'
-                        : 'border-[#DDE0E4] focus:border-[#1C1E22] focus:shadow-[inset_0_0_0_1px_#1C1E22]'
-                    } ${isSubmitting ? 'bg-[#F2F3F5] text-[#5E656E]' : 'text-[#1C1E22]'}`}
-                  />
-                  {errors.necesidad && (
-                    <p id="error-necesidad" className="mt-1 text-xs text-[#C5221F] flex items-center gap-1">
-                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                      <span>{errors.necesidad}</span>
-                    </p>
-                  )}
-                </div>
-
-                {/* Adjunto de Lista o Planos (Opcional, acelera cotización) */}
-                <div>
-                  <span className="block text-sm font-semibold text-[#1C1E22] mb-1.5">
-                    Lista de herrajes o planos <span className="text-xs font-normal text-[#5E656E]">(opcional)</span>
-                  </span>
-
-                  <input
-                    ref={fileInputRef}
-                    id="form-file"
-                    type="file"
-                    accept=".pdf,.xls,.xlsx,.csv,.jpg,.jpeg,.png"
-                    onChange={handleFileChange}
-                    className="hidden"
-                  />
-
-                  {formData.fileName ? (
-                    <div className="flex items-center justify-between p-3.5 bg-[#F2F3F5] border border-[#DDE0E4] rounded-[2px]">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <FileText className="w-5 h-5 text-[#1C1E22] shrink-0" />
-                        <div className="text-xs truncate">
-                          <span className="font-semibold text-[#1C1E22] block truncate">
-                            {truncateMiddle(formData.fileName, 30)}
-                          </span>
-                          <span className="text-[#5E656E]">{formData.fileSize}</span>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={removeFile}
-                        className="text-xs font-semibold text-[#C5221F] hover:underline shrink-0 p-1 flex items-center gap-1 cursor-pointer"
-                        aria-label="Quitar archivo adjunto"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                        <span>Quitar</span>
-                      </button>
-                    </div>
-                  ) : (
-                    <div
-                      onClick={() => fileInputRef.current?.click()}
-                      className="border-2 border-dashed border-[#DDE0E4] hover:border-[#1C1E22] p-4 rounded-[2px] flex items-center justify-center gap-3 cursor-pointer bg-[#F2F3F5]/40 hover:bg-[#F2F3F5] transition-colors text-center"
-                    >
-                      <UploadCloud className="w-5 h-5 text-[#5E656E]" />
-                      <div className="text-xs text-[#5E656E]">
-                        <span className="font-bold text-[#1C1E22] underline underline-offset-2">Adjuntar planilla o plano</span> (PDF, Excel, JPG, hasta 10 MB)
-                      </div>
-                    </div>
-                  )}
-
-                  {errors.archivo && (
-                    <p className="mt-1 text-xs text-[#C5221F] flex items-center gap-1">
-                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                      <span>{errors.archivo}</span>
-                    </p>
-                  )}
-                </div>
-
-                {/* Consentimiento Legal */}
-                <div>
-                  <label className="flex items-start gap-2.5 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      name="consentimiento"
-                      required
-                      checked={formData.consentimiento}
-                      disabled={isSubmitting}
-                      onChange={(e) => handleChange('consentimiento', e.target.checked)}
-                      className="mt-0.5 w-4 h-4 rounded-[2px] border-[#DDE0E4] text-[#1C1E22] focus:ring-[#1C1E22]"
-                    />
-                    <span className="text-xs text-[#5E656E] leading-relaxed">
-                      Acepto que Cerramax use mis datos para responder esta solicitud y coordinar la cotización comercial.
-                    </span>
-                  </label>
-                  {errors.consentimiento && (
-                    <p className="mt-1 text-xs text-[#C5221F] flex items-center gap-1">
-                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                      <span>{errors.consentimiento}</span>
-                    </p>
-                  )}
-                </div>
-
-                {/* Campo Trampa Honeypot oculto para bots */}
+              {/* Adjuntar Archivo Minimalista */}
+              <div>
                 <input
-                  type="text"
-                  name="website_source"
-                  value={formData.honeypot}
-                  onChange={(e) => setFormData(prev => ({ ...prev, honeypot: e.target.value }))}
-                  tabIndex={-1}
-                  autoComplete="off"
+                  ref={fileInputRef}
+                  id="form-file"
+                  type="file"
+                  accept=".pdf,.xls,.xlsx,.csv,.jpg,.jpeg,.png"
+                  onChange={handleFileChange}
                   className="hidden"
-                  aria-hidden="true"
                 />
 
-                {/* Barra de progreso de subida si se adjuntó archivo y está enviando */}
-                {isSubmitting && formData.fileName && (
-                  <div className="w-full bg-[#DDE0E4] h-1.5 rounded-full overflow-hidden">
-                    <div
-                      className="bg-[#FFC400] h-full transition-all duration-200"
-                      style={{ width: `${uploadProgress}%` }}
-                    />
-                  </div>
-                )}
-
-                {/* Botón de envío */}
-                <div className="pt-2">
-                  <Button
-                    id="btn-enviar-cotizacion"
-                    label={isSubmitting ? 'Enviando solicitud…' : 'Enviar solicitud de cotización'}
-                    type="submit"
-                    loading={isSubmitting}
-                    variant="primary"
-                    size="lg"
-                    fullWidth
-                    className="sm:w-auto"
-                    icon={<Send className="w-4 h-4" />}
-                  />
-
-                  <div className="mt-3 text-xs text-[#5E656E]">
-                    ¿Prefieres hablar ahora?{' '}
-                    <a
-                      href={CONTACT_INFO.whatsappHref}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-bold text-[#1C1E22] underline underline-offset-2 hover:text-black"
+                {formData.fileName ? (
+                  <div className="flex items-center justify-between px-3 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg text-xs">
+                    <div className="flex items-center gap-2 truncate">
+                      <Paperclip className="w-3.5 h-3.5 text-[#15171A] shrink-0" />
+                      <span className="font-medium text-[#15171A] truncate">{formData.fileName}</span>
+                      <span className="text-[#6B7280]">({formData.fileSize})</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={removeFile}
+                      className="text-[#DC2626] hover:text-red-700 p-1 cursor-pointer flex items-center gap-0.5"
                     >
-                      Escríbenos directamente por WhatsApp
-                    </a>
+                      <X className="w-3.5 h-3.5" />
+                      <span>Quitar</span>
+                    </button>
                   </div>
-                </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full py-2.5 px-3 border border-dashed border-[#D1D5DB] hover:border-[#15171A] rounded-lg text-xs text-[#5E656E] hover:text-[#15171A] flex items-center justify-center gap-2 transition-colors cursor-pointer bg-white"
+                  >
+                    <Paperclip className="w-3.5 h-3.5" />
+                    <span>Adjuntar plano, planilla o especificación técnica <span className="text-[#9CA3AF]">(opcional, hasta 10 MB)</span></span>
+                  </button>
+                )}
+              </div>
 
-              </form>
-            )}
+              {/* Consentimiento */}
+              <div className="pt-1">
+                <label className="flex items-start gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    name="consentimiento"
+                    required
+                    checked={formData.consentimiento}
+                    disabled={isSubmitting}
+                    onChange={(e) => handleChange('consentimiento', e.target.checked)}
+                    className="mt-0.5 w-4 h-4 rounded border-[#D1D5DB] text-[#15171A] focus:ring-[#15171A]"
+                  />
+                  <span className="text-xs text-[#5E656E] leading-tight">
+                    Acepto que Cerramax use estos datos para enviar la propuesta y coordinar la cotización comercial.
+                  </span>
+                </label>
+                {errors.consentimiento && (
+                  <p className="mt-1 text-[11px] text-[#DC2626] flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3 shrink-0" />
+                    <span>{errors.consentimiento}</span>
+                  </p>
+                )}
+              </div>
 
-          </div>
+              {/* Honeypot anti-spam */}
+              <input
+                type="text"
+                name="company_tax_id_hp"
+                value={formData.honeypot}
+                onChange={(e) => setFormData(prev => ({ ...prev, honeypot: e.target.value }))}
+                tabIndex={-1}
+                autoComplete="off"
+                className="hidden"
+                aria-hidden="true"
+              />
+
+              {/* Botón de Envío */}
+              <div className="pt-3 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full sm:w-auto px-8 h-12 rounded-xl bg-[#FFC400] hover:bg-[#E6B000] active:scale-[0.99] text-[#15171A] font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs"
+                >
+                  <Send className="w-4 h-4" />
+                  <span>{isSubmitting ? 'Enviando solicitud…' : 'Enviar solicitud de cotización'}</span>
+                </button>
+
+                <p className="text-xs text-[#6B7280] text-center sm:text-right">
+                  Razón Social: <span className="font-medium text-[#15171A]">{CONTACT_INFO.legalName}</span> · Factura inmediata
+                </p>
+              </div>
+
+            </form>
+          )}
 
         </div>
 
