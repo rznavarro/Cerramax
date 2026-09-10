@@ -1,0 +1,6 @@
+{
+  "name": "Cerramax",
+  "description": "Proveedor confiable de cerraduras y herrajes de seguridad en Chile para constructoras, administraciones de edificios y hogares.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
